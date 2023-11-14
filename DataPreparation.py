@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 import os
-from utils import strDictParse, lemmatize, lemmatizer, extensionStopWords
+from utils import strDictParse, lemmatize, lemmatizer, extensionStopWords, saveData, loadData
 from tqdm import tqdm, trange
 import time
 
@@ -45,31 +45,44 @@ class DataPreparation:
                       skillTokens:bool = True,
                       stopWords:list = [],
                       saveDF: str = './data/prepdf.csv') -> None:
-        print("Обработка текстового описания всех вакансий...")
-        self.prepDF = self.prepDF[~self.prepDF.Description.isnull()]
-        for col in parseColumns[:-1]:
-            self.prepDF[col] = self.prepDF[col].apply(lambda x: strDictParse(x, *[self.regexPatterns[col][i] for i in range(5)]))
 
-        self._get_skillSet()
         if os.path.exists(saveDF):
-            print('Обнаружен файл с уже обработанными описаниями. Загрузка обработанных текстов...')
-            self.prepDF = pd.read_csv(saveDF, index_col=0, na_values='')
-            self.prepDF['Description'] = self.prepDF['Description'].replace(np.nan, '')
+            self.prepDF = loadData(saveDF)
+
+            self.prepDF['Description'] = self.prepDF['Description'].replace(np.nan, ' ')
+            for col in parseColumns[:-1]:
+                self.prepDF[col] = self.prepDF[col].apply(
+                    lambda x: strDictParse(x, *[self.regexPatterns[col][i] for i in range(5)]))
+
+            self._get_skillSet()
         else:
+            print("Обработка текстового описания всех вакансий...")
+            self.prepDF = self.prepDF[~self.prepDF.Description.isnull()]
+
+            for col in parseColumns[:-1]:
+                self.prepDF[col] = self.prepDF[col].apply(
+                    lambda x: strDictParse(x, *[self.regexPatterns[col][i] for i in range(5)]))
+
+            self._get_skillSet()
             self.prepDF['Description'] = self.prepDF['Description'].apply(lambda x: lemmatize(x,
-                                                                                              self.regexPatterns['Description'],
-                                                                                              stops=stopWords,
-                                                                                              tokens=self.skillSet if skillTokens else None))
-            self.prepDF.to_csv(saveDF)
+                                                                          self.regexPatterns['Description'],
+                                                                          stops=stopWords,
+                                                                          tokens=self.skillSet if skillTokens else None))
 
-    def compute_oneHotSkill(self):
-        self.oneHotSkills = np.zeros((len(self.skillSet), self.prepDF.shape[0]), dtype=np.uint)
-        for i_vac in trange(self.prepDF.shape[0], desc='Процесс oneHot кодировки навыков по текстам вакансий'):
-            for i_skill in range(len(self.skillSet)):
-                if self.skillSet[i_skill] in self.prepDF.iloc[i_vac, list(self.prepDF.columns).index('Description')]:
-                    self.oneHotSkills[i_skill, i_vac] = 1
+            saveData(self.prepDF, saveDF)
 
-        self.oneHotSkills = pd.DataFrame(self.oneHotSkills.T, columns=self.skillSet)
+    def compute_oneHotSkill(self, savePath: str = './data/oneHotSkills.pkl'):
+        if os.path.exists(savePath):
+            self.oneHotSkills = loadData(savePath)
+        else:
+            self.oneHotSkills = np.zeros((len(self.skillSet), self.prepDF.shape[0]), dtype=np.uint)
+            for i_vac in trange(self.prepDF.shape[0], desc='Процесс oneHot кодировки навыков по текстам вакансий'):
+                for i_skill in range(len(self.skillSet)):
+                    if self.skillSet[i_skill] in self.prepDF.iloc[i_vac, list(self.prepDF.columns).index('Description')]:
+                        self.oneHotSkills[i_skill, i_vac] = 1
+
+            self.oneHotSkills = pd.DataFrame(self.oneHotSkills.T, columns=self.skillSet)
+            saveData(self.oneHotSkills, savePath)
 
     def run(self, baseTokenIsSkills:bool = True, pathSaveLemmasTexts = './data/prepdf.csv'):
         self._read_csv()

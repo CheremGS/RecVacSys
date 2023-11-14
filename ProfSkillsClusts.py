@@ -5,7 +5,7 @@ import os
 
 import pandas as pd
 
-from utils import lemmatize
+from utils import lemmatize, saveData, loadData
 import pickle
 import gensim.corpora as corpora
 
@@ -55,7 +55,6 @@ class buildLDAmodel():
         self.resDF['VacancyCorpus'] = [word for word in textPrepData]
 
     def fit_predict(self,
-                    save_model=True,
                     modelName='LdaModel.pkl',
                     savePath = './models') -> None:
         self._prepare_LDA_input()
@@ -69,18 +68,14 @@ class buildLDAmodel():
                                                 num_topics=20,
                                                 passes=2,
                                                 random_state=0)
-            if save_model:
-                with open(modelPath, 'wb') as saveFile:
-                    pickle.dump(self.model, saveFile)
-                print(f"Файл сохранен в {modelPath}")
+
+            saveData(self.model, modelPath)
         else:
-            print("Указанный файл уже существует, модель будет загружена с ранее сохранненого файла")
-            with open(modelPath, 'rb') as saveFile:
-                self.model = pickle.load(saveFile)
+            self.model = loadData(modelPath)
 
-        self.resDF['TopicLabel'] = np.array([i[0][0] if len(i)>0 else -1 for i in self.model.get_document_topics(self.encodeCorpus)], dtype=np.int)
-        self.resDF['TopicDistr'] = [i[0][1] if len(i)>0 else None for i in self.model.get_document_topics(self.encodeCorpus)]
-
+        resTopics = self.model.get_document_topics(self.encodeCorpus)
+        self.resDF['TopicLabel'] = np.array([i[0][0] if len(i)>0 else -1 for i in resTopics], dtype=np.int)
+        self.resDF['TopicProb'] = [i[0][1] if len(i)>0 else None for i in resTopics]
 
     def recommendProfsSkillsVacs(self,
                                  resume: str,

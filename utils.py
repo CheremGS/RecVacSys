@@ -1,5 +1,8 @@
 import re
 import pymorphy2
+import os
+import pandas as pd
+import pickle
 
 lemmatizer = pymorphy2.MorphAnalyzer(lang='ru')
 extensionStopWords = ['опыт', "работа", 'знание', 'требование', 'компания', "команда", "оклад", "хотеть"
@@ -89,3 +92,31 @@ def lemmatize(text: str, delSymbPattern: str,
                     s.append(prep_word)
         out = ' '.join(s)
     return out
+
+
+def saveData(data: object,
+             filename: str) -> None:
+    _, extension = os.path.splitext(filename)
+    if extension == '.csv':
+        data.to_csv(filename)
+    elif extension == '.pkl':
+        with open(filename, 'wb') as saveFile:
+            pickle.dump(data, saveFile)
+    else:
+        assert False, 'Specified wrong file extension!'
+
+    print(f"Файл сохранен в {filename}")
+
+
+def loadData(filename: str):
+    assert os.path.exists(filename), 'Specified file doesnt exist!'
+    _, extension = os.path.splitext(filename)
+    if extension == '.csv':
+        data = pd.read_csv(filename, index_col=0)
+    elif extension == '.pkl':
+        with open(filename, 'rb') as saveFile:
+            data = pickle.load(saveFile)
+    else:
+        assert False, 'Specified wrong file extension!'
+    print(f"Данные загружены c ({filename})")
+    return data

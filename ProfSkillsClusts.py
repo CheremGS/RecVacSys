@@ -54,7 +54,10 @@ class buildLDAmodel():
 
         self.resDF['VacancyCorpus'] = [word for word in textPrepData]
 
-    def fit_predict(self, save_model=True, modelName='LdaModel.pkl', savePath = './models') -> None:
+    def fit_predict(self,
+                    save_model=True,
+                    modelName='LdaModel.pkl',
+                    savePath = './models') -> None:
         self._prepare_LDA_input()
         modelPath = os.path.join(savePath, modelName)
         if not os.path.exists(modelPath):
@@ -78,7 +81,10 @@ class buildLDAmodel():
         self.resDF['TopicLabel'] = np.array([i[0][0] if len(i)>0 else -1 for i in self.model.get_document_topics(self.encodeCorpus)], dtype=np.int)
         self.resDF['TopicDistr'] = [i[0][1] if len(i)>0 else None for i in self.model.get_document_topics(self.encodeCorpus)]
 
-    def recommendProfsSkills(self, resume: str) -> None:
+
+    def recommendProfsSkillsVacs(self,
+                                 resume: str,
+                                 pathOrigData:str = './data/database.csv') -> None:
         clust, prepResume = self.inference(resume)
         nameProfs = self.resDF[self.resDF['TopicLabel'] == clust]['Name'].values
 
@@ -86,7 +92,7 @@ class buildLDAmodel():
         for prof in nameProfs:
             normProfName.extend(lemmatize(prof, self.descRP,
                                           stops=['junior', 'senior', 'middle'],
-                                          tokens=self.vocab.extend(['developer', 'разработчик'])).split())
+                                          tokens=self.vocab).split())
 
         resProf = np.unique(np.array(normProfName), return_counts=True)
         topInd = np.argpartition(resProf[1], -2)[-2:]
@@ -100,12 +106,27 @@ class buildLDAmodel():
         outerSkills = list(set(top_terms) - set(prepResume))
         print(outerSkills)
 
+        print("Рекомедую изучить следующие навыки:")
         simCosine = np.zeros(shape=(len(prepResume), len(outerSkills)))
         for i, resumeSkill in enumerate(prepResume):
             a = self.oneHotSkills.loc[:, resumeSkill].values
             for j, clustSkill in enumerate(outerSkills):
                 b = self.oneHotSkills.loc[:, clustSkill].values
                 simCosine[i, j] = a.dot(b)/(np.linalg.norm(a) * np.linalg.norm(b))
-
-        print("Рекомедую изучить следующие навыки:")
         print([outerSkills[x] for x in np.argpartition(simCosine.mean(axis=0), kth=-5)[-5:]])
+
+        print("Рекомендуемые вакансии")
+        resumeTokenVect = np.array([1 if token in prepResume else 0 for token in self.vocab], dtype=np.uint)
+        currentClustVacs = self.oneHotSkills[(self.resDF['TopicLabel']==clust).values]
+        cosMetr = currentClustVacs.values.dot(resumeTokenVect)/np.linalg.norm(currentClustVacs.values, axis=1)
+
+        # отсюда достать индексы и отправить в ориг датасет с них достать строки
+        recVacsDF = self.resDF.iloc[np.argpartition(cosMetr, -5)[-5:], :]
+        dataOrig = pd.read_csv(pathOrigData, index_col=0)
+
+        print(dataOrig.iloc[recVacsDF.index, :])
+
+
+
+
+

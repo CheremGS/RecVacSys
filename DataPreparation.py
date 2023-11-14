@@ -71,7 +71,7 @@ class DataPreparation:
 
         self.oneHotSkills = pd.DataFrame(self.oneHotSkills.T, columns=self.skillSet)
 
-    def run(self, baseTokenIsSkills:bool = True):
+    def run(self, baseTokenIsSkills:bool = True, pathSaveLemmasTexts = './data/prepdf.csv'):
         self._read_csv()
         stops = stopwords.words('russian')
         stops_en = stopwords.words('english')
@@ -81,6 +81,7 @@ class DataPreparation:
         parseColumns = list(self.regexPatterns.keys())
         self.parseDictCols(parseColumns=parseColumns,
                            skillTokens=baseTokenIsSkills,
-                           stopWords=stops)
+                           stopWords=stops,
+                           saveDF=pathSaveLemmasTexts)
         self.compute_oneHotSkill()
 

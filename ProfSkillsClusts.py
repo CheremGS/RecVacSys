@@ -6,7 +6,6 @@ import os
 import pandas as pd
 
 from utils import lemmatize, saveData, loadData
-import pickle
 import gensim.corpora as corpora
 
 
@@ -110,7 +109,7 @@ class buildLDAmodel():
             for j, clustSkill in enumerate(outerSkills):
                 b = self.oneHotSkills.loc[:, clustSkill].values
                 simCosine[i, j] = a.dot(b)/(np.linalg.norm(a) * np.linalg.norm(b))
-        print([outerSkills[x] for x in np.argpartition(simCosine.mean(axis=0), kth=-5)[-5:]])
+        print([outerSkills[x] for x in np.argpartition(simCosine.mean(axis=0), kth=-7)[-7:]])
 
         print("Рекомендуемые вакансии")
         resumeTokenVect = np.array([1 if token in prepResume else 0 for token in self.vocab], dtype=np.uint)
@@ -120,6 +119,11 @@ class buildLDAmodel():
         # отсюда достать индексы и отправить в ориг датасет с них достать строки
         recVacsDF = self.resDF.iloc[np.argpartition(cosMetr, -nRecVacs)[-nRecVacs:], :]
         dataOrig = pd.read_csv(pathOrigData, index_col=0)
+
+        useColumns = ['Ids', 'Employer', 'Name', 'Salary', 'From', 'To', 'Experience', 'Schedule', 'Keys',
+                      'Description']
+        drop_columns = set(dataOrig.columns) - set(useColumns)
+        dataOrig.drop(columns=drop_columns, axis=1, inplace=True)
 
         saveData(dataOrig.iloc[recVacsDF.index, :], pathSaveRecsVacs)
 

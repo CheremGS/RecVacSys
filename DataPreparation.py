@@ -32,7 +32,9 @@ class DataPreparation:
         self.originDF = pd.read_csv(self.csv_path)
         assert set(['Ids', 'Name', 'Description', 'Keys']) <= set(self.originDF.columns), \
             'Your csv-data have include next columns: [Ids, Name, Description, Keys]'
-        self.prepDF = self.originDF.copy()
+        useColumns = ['Ids', 'Employer', 'Name', 'Salary', 'From', 'To', 'Experience', 'Schedule', 'Keys', 'Description']
+        drop_columns = set(self.originDF.columns) - set(useColumns)
+        self.prepDF = self.originDF.copy().drop(columns=drop_columns, axis=1)
 
     def _get_skillSet(self) -> None:
         print('Создание списка всех навыков...')
@@ -48,6 +50,10 @@ class DataPreparation:
 
         if os.path.exists(saveDF):
             self.prepDF = loadData(saveDF)
+            useColumns = ['Ids', 'Employer', 'Name', 'Salary', 'From', 'To', 'Experience', 'Schedule', 'Keys',
+                          'Description']
+            drop_columns = set(self.prepDF.columns) - set(useColumns)
+            self.prepDF.drop(columns=drop_columns, axis=1, inplace=True)
 
             self.prepDF['Description'] = self.prepDF['Description'].replace(np.nan, ' ')
             for col in parseColumns[:-1]:

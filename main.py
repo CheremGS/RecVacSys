@@ -3,12 +3,12 @@ from ProfSkillsClusts import buildLDAmodel
 
 
 def main(mConfig: dict,
-         dataPath: str = './data/database.csv',
-         pathLemmasTexts: str = './data/prepdf.csv',
-         nameClustModel: str = 'LdaModel.pkl',
+         dataPath: str = './data/database9000.csv',
+         pathLemmasTexts: str = './data/prepdf9000.csv',
+         nameClustModel: str = 'LdaModel9000.pkl',
          saveDirModels: str = './models',
-         resume: str = 'Знаю на хорошем уровне плис, soc, pild'
-         ):
+         resume: str = 'Знаю на хорошем уровне плис, soc, pild',
+         Nrecs: int = 10):
 
     dataPrep = DataPreparation(dataPath)
     dataPrep.run(baseTokenIsSkills=True,
@@ -24,17 +24,22 @@ def main(mConfig: dict,
                          savePath=saveDirModels,
                          modelConfig=mConfig)
 
-    LDAmodel.recommendProfsSkillsVacs(resume)
+    LDAmodel.recommendProfsSkillsVacs(resume,
+                                      nRecVacs=Nrecs,
+                                      pathOrigData=dataPath)
 
 
 if __name__ == '__main__':
     modelConfig = {'minimum_probability': 0.3,
-                   "eta": 0.8,
-                   "num_topics": 30,
-                   "passes": 20,
-                   "random_state": 0}
-    modelName = 'LdaModel20.pkl'
-    resume = 'ml python алгоритм'
+                   "num_topics": 45,
+                   'eta': 0.65,
+                   "alpha": 'auto',
+                   "random_state": 0,
+                   "update_every": 1,
+                   "chunksize": 100
+                   }
+    modelName = 'LdaModel9000.pkl'
+    resume = 'Программирую на C++. Опыт работы с stm32, jetson nano'
 
     main(mConfig=modelConfig,
          nameClustModel=modelName,

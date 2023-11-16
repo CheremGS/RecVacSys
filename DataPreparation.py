@@ -41,7 +41,7 @@ class DataPreparation:
         vacancies = list(self.prepDF["Keys"].apply(lambda x: x if x else ['None']).values)
         skill_set = list(set([skill for vacancy_skills in vacancies for skill in vacancy_skills]))
         assert len(skill_set) > 0, 'Длина массива названий навыков равна нулю! (len(skillSet) = 0)'
-        self.skillSet = [lemmatizer.parse(word)[0].normal_form for word in skill_set]
+        self.skillSet = list(set([lemmatizer.parse(word)[0].normal_form for word in skill_set]))
 
     def parseDictCols(self, parseColumns: list,
                       skillTokens:bool = True,
@@ -77,7 +77,7 @@ class DataPreparation:
 
             saveData(self.prepDF, saveDF)
 
-    def compute_oneHotSkill(self, savePath: str = './data/oneHotSkills.pkl'):
+    def compute_oneHotSkill(self, savePath: str):
         if os.path.exists(savePath):
             self.oneHotSkills = loadData(savePath)
         else:
@@ -90,7 +90,9 @@ class DataPreparation:
             self.oneHotSkills = pd.DataFrame(self.oneHotSkills.T, columns=self.skillSet)
             saveData(self.oneHotSkills, savePath)
 
-    def run(self, baseTokenIsSkills:bool = True, pathSaveLemmasTexts = './data/prepdf.csv'):
+    def run(self, baseTokenIsSkills:bool = True,
+            pathSaveLemmasTexts = './data/prepdf.csv',
+            oneHotSavePath='./data/oneHotSkills.csv'):
         self._read_csv()
         stops = stopwords.words('russian')
         stops_en = stopwords.words('english')
@@ -102,5 +104,5 @@ class DataPreparation:
                            skillTokens=baseTokenIsSkills,
                            stopWords=stops,
                            saveDF=pathSaveLemmasTexts)
-        self.compute_oneHotSkill()
+        self.compute_oneHotSkill(savePath=oneHotSavePath)
 

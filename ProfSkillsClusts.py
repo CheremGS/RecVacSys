@@ -6,14 +6,17 @@ import os
 import pandas as pd
 
 from utils import lemmatize, saveData, loadData
+from sklearn.decomposition import NMF
+from sklearn.feature_extraction.text import TfidfVectorizer
 import gensim.corpora as corpora
 
 
-class buildLDAmodel():
+class modelProcess():
     def __init__(self, prepareDF,
                  descriptionRegexPattern: str,
                  vocab: list,
-                 oneHotSkills: pd.DataFrame):
+                 oneHotSkills: pd.DataFrame,
+                 modelType: str):
         self.resDF = prepareDF.copy()
         self.id2word = None
         self.model = None
@@ -21,24 +24,33 @@ class buildLDAmodel():
         self.descRP = descriptionRegexPattern
         self.vocab = vocab
         self.oneHotSkills = oneHotSkills
+        self.modelType = modelType
 
     def inference(self, resume: str) -> (int, list):
         important_words=lemmatize(resume, delSymbPattern=self.descRP, tokens=self.vocab)
-        ques_vec = []
-        ques_vec = self.id2word.doc2bow(important_words.split())
+        assert len(important_words) > 0, \
+            'Опишите свои навыки более конкретно (после обработки резюме не было найдено ни одного навыка)'
 
-        topic_vec = []
-        topic_vec = self.model[ques_vec]
-        word_count_array = np.empty((len(topic_vec), 2), dtype=np.object)
-        for i in range(len(topic_vec)):
-            word_count_array[i, 0] = topic_vec[i][0]
-            word_count_array[i, 1] = topic_vec[i][1]
+        if self.modelType == 'NMF':
+            preps = important_words.split()
+            return self.model.transform(self.vectorizer.transform(preps)).sum(axis=0).argmax(), preps
 
-        idx = np.argsort(word_count_array[:, 1])
-        idx = idx[::-1]
-        word_count_array = word_count_array[idx]
+        elif self.modelType == "LDA":
+            ques_vec = []
+            ques_vec = self.id2word.doc2bow(important_words.split())
 
-        return word_count_array[0][0], important_words.split()
+            topic_vec = []
+            topic_vec = self.model[ques_vec]
+            word_count_array = np.empty((len(topic_vec), 2), dtype=np.object)
+            for i in range(len(topic_vec)):
+                word_count_array[i, 0] = topic_vec[i][0]
+                word_count_array[i, 1] = topic_vec[i][1]
+
+            idx = np.argsort(word_count_array[:, 1])
+            idx = idx[::-1]
+            word_count_array = word_count_array[idx]
+
+            return word_count_array[0][0], important_words.split()
 
     def _prepare_LDA_input(self) -> None:
         text = [text.split() for text in self.resDF.Description.values]
@@ -56,10 +68,33 @@ class buildLDAmodel():
 
         self.resDF['VacancyCorpus'] = [word for word in textPrepData]
 
-    def fit_predict(self,
-                    modelConfig: dict,
-                    modelName='LdaModel.pkl',
-                    savePath = './models',) -> None:
+    def _prepare_MNF_input(self):
+        text = self.resDF.Description.values
+        self.vectorizer = TfidfVectorizer(max_features=1000,
+                                          max_df=0.99,
+                                          min_df=0.01)
+        self.encodeCorpus = self.vectorizer.fit_transform(text)
+
+    def NMF_fit_predict(self,
+                        modelConfig: dict,
+                        modelName: str = 'NMFmodel.pkl',
+                        savePath: str = './models'):
+        self._prepare_MNF_input()
+        modelPath = os.path.join(savePath, modelName)
+        if not os.path.exists(modelPath):
+            print('Создание модели NMF. Обучение модели...')
+            self.model = NMF(**modelConfig)
+            self.model.fit(self.encodeCorpus)
+            saveData(self.model, modelPath)
+        else:
+            self.model = loadData(modelPath)
+
+        self.resDF['TopicLabel'] = self.model.transform(self.encodeCorpus).argmax(axis=1).astype(np.int)
+
+    def LDA_fit_predict(self,
+                        modelConfig: dict,
+                        modelName='LdaModel.pkl',
+                        savePath = './models', ) -> None:
         self._prepare_LDA_input()
         modelPath = os.path.join(savePath, modelName)
         if not os.path.exists(modelPath):
@@ -67,7 +102,6 @@ class buildLDAmodel():
             self.model = gensim.models.LdaModel(self.encodeCorpus,
                                                 id2word=self.id2word,
                                                 **modelConfig)
-
             saveData(self.model, modelPath)
         else:
             self.model = loadData(modelPath)
@@ -79,6 +113,7 @@ class buildLDAmodel():
     def recommendProfsSkillsVacs(self,
                                  resume: str,
                                  nRecVacs: int = 5,
+                                 nRecSkills: int = 5,
                                  pathOrigData:str = './data/database.csv',
                                  pathSaveRecsVacs: str = './data/Recomendations.csv') -> None:
         clust, prepResume = self.inference(resume)
@@ -94,10 +129,17 @@ class buildLDAmodel():
         topInd = np.argpartition(resProf[1], -2)[-2:]
         print("Рекомендуемая профессия: " + " ".join([resProf[0][i] for i in topInd]))
         print('Самые частые навыки для подобранного кластера профессий (помимо указанных в вашем резюме):')
+        top_terms = []
 
-        top_terms = self.model.print_topic(clust, topn=20) # 0.042*"react" + 0.040*"js" + 0.030*"git" + 0.029*"frontend"
-        top_terms = re.findall(re.compile(r'"\w+"'), top_terms)
-        top_terms = [x[1:-1] for x in top_terms if '_' not in x]
+        if self.modelType == "LDA":
+            top_terms = self.model.print_topic(clust, topn=len(prepResume)+int(nRecSkills*1.5)) # 0.042*"react" + 0.040*"js" + 0.030*"git" + 0.029*"frontend"
+            top_terms = re.findall(re.compile(r'"\w+"'), top_terms)
+            top_terms = [x[1:-1] for x in top_terms if '_' not in x]
+
+        elif self.modelType == "NMF":
+            feature_names = self.vectorizer.get_feature_names_out()
+            top_ids_words = self.model.components_[clust].argsort()[-(len(prepResume)+int(nRecSkills*1.5)):][::-1]
+            top_terms = [feature_names[i] for i in top_ids_words]
 
         outerSkills = list(set(top_terms) - set(prepResume))
         print(outerSkills)
@@ -109,7 +151,7 @@ class buildLDAmodel():
             for j, clustSkill in enumerate(outerSkills):
                 b = self.oneHotSkills.loc[:, clustSkill].values
                 simCosine[i, j] = a.dot(b)/(np.linalg.norm(a) * np.linalg.norm(b))
-        print([outerSkills[x] for x in np.argpartition(simCosine.mean(axis=0), kth=-7)[-7:]])
+        print([outerSkills[x] for x in np.argpartition(simCosine.mean(axis=0), kth=-nRecSkills)[-nRecSkills:]])
 
         print("Рекомендуемые вакансии")
         resumeTokenVect = np.array([1 if token in prepResume else 0 for token in self.vocab], dtype=np.uint)

@@ -40,27 +40,27 @@ def main(mConfig: dict,
 
 
 if __name__ == '__main__':
-    dataPath: str = './data/database9000.csv'
-    pathLemmasTexts: str = './data/prepdf9000.csv'
+    dataPath: str = './data/db10500.csv'
+    pathLemmasTexts: str = './data/prepdf10500.csv'
     saveDirModels: str = './models'
-    oneHotSkill: str = './data/oneHotSkills9000.csv'
-    NVacRecs: int = 10
-    NskillsRecs: int = 10
+    oneHotSkill: str = './data/OHS10500.csv'
+    NVacRecs: int = 20
+    NskillsRecs: int = 7
 
-    LDAmodelConfig = {"num_topics": 56,
+    LDAmodelConfig = {"num_topics": 60,
                       'eta': 0.8,
                       "alpha": 'auto',
                       "random_state": 0,
                       "update_every": 1,
                       "chunksize": 100}
-    LDAmodelName = 'LdaModel9000.pkl'
+    LDAmodelName = 'LdaModel10500.pkl'
 
-    NMFmodelConfig = {'n_components': 50,
+    NMFmodelConfig = {'n_components': 80,
                       'random_state': 0}
-    NMFmodelName = 'NMFmodel9000.pkl'
+    NMFmodelName = 'NMFmodel10500.pkl'
 
     modelType = 'NMF'
-    resume = 'Знаю на хорошем уровне гост, autocad, техническую документацию'
+    resume = 'Знаю на хорошем уровне плис, микроконтроллер, stm32'
 
     main(dataPath=dataPath,
          pathLemmasTexts=pathLemmasTexts,

@@ -1,5 +1,6 @@
 import numpy as np
 import gensim
+from gensim.models import CoherenceModel
 import re
 import os
 
@@ -9,6 +10,9 @@ from utils import lemmatize, saveData, loadData
 from sklearn.decomposition import NMF
 from sklearn.feature_extraction.text import TfidfVectorizer
 import gensim.corpora as corpora
+from sklearn.metrics.pairwise import cosine_similarity
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 class modelProcess():
@@ -71,8 +75,8 @@ class modelProcess():
     def _prepare_MNF_input(self):
         text = self.resDF.Description.values
         self.vectorizer = TfidfVectorizer(max_features=1000,
-                                          max_df=0.99,
-                                          min_df=0.01)
+                                          max_df=0.997,
+                                          min_df=0.003)
         self.encodeCorpus = self.vectorizer.fit_transform(text)
 
     def NMF_fit_predict(self,
@@ -90,6 +94,7 @@ class modelProcess():
             self.model = loadData(modelPath)
 
         self.resDF['TopicLabel'] = self.model.transform(self.encodeCorpus).argmax(axis=1).astype(np.int)
+        self.modelEval()
 
     def LDA_fit_predict(self,
                         modelConfig: dict,
@@ -109,6 +114,37 @@ class modelProcess():
         resTopics = self.model.get_document_topics(self.encodeCorpus)
         self.resDF['TopicLabel'] = np.array([i[0][0] if len(i)>0 else -1 for i in resTopics], dtype=np.int)
         self.resDF['TopicProb'] = [i[0][1] if len(i)>0 else None for i in resTopics]
+
+        self.modelEval()
+
+    def modelEval(self, topicTermData = './data/descriptionTopics.csv'):
+        descrTopics = {}
+        if self.modelType == 'LDA':
+            # Compute Perplexity # a measure of how good the model is. lower the better.
+            print('\nPerplexity: ', self.model.log_perplexity(self.encodeCorpus))
+
+            # Compute Coherence Score
+            coherence_model_lda = CoherenceModel(model=self.model, texts=self.resDF.VacancyCorpus,
+                                                 dictionary=self.id2word, coherence='c_v')
+            coherence_lda = coherence_model_lda.get_coherence()
+            print('\nCoherence Score: ', coherence_lda)
+
+            for topic in self.model.show_topics():
+                sks = re.findall(re.compile(r'"\w+"'), topic[1])
+                descrTopics[topic[0]] = ' '.join([x[1:-1] for x in sks])
+
+        elif self.modelType == 'NMF':
+            feature_names = self.vectorizer.get_feature_names_out()
+            sns.heatmap(cosine_similarity(self.model.components_)).set(xticklabels=[], yticklabels=[])
+            plt.title('Косинусная близость выделенных тематик')
+            plt.show()
+
+            for topic_idx, topic_words in enumerate(self.model.components_):
+                top_words_idx = topic_words.argsort()[-10:][::-1]
+                top_words = [feature_names[i] for i in top_words_idx]
+                descrTopics[topic_idx + 1] = ' '.join(top_words)
+
+        saveData(pd.Series(descrTopics), topicTermData)
 
     def recommendProfsSkillsVacs(self,
                                  resume: str,
@@ -159,7 +195,7 @@ class modelProcess():
         cosMetr = currentClustVacs.values.dot(resumeTokenVect)/np.linalg.norm(currentClustVacs.values, axis=1)
 
         # отсюда достать индексы и отправить в ориг датасет с них достать строки
-        recVacsDF = self.resDF.iloc[np.argpartition(cosMetr, -nRecVacs)[-nRecVacs:], :]
+        recVacsDF = self.resDF.iloc[np.argpartition(cosMetr, kth=-nRecVacs)[-nRecVacs:], :]
         dataOrig = pd.read_csv(pathOrigData, index_col=0)
 
         useColumns = ['Ids', 'Employer', 'Name', 'Salary', 'From', 'To', 'Experience', 'Schedule', 'Keys',

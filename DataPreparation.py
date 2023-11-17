@@ -4,7 +4,6 @@ import re
 import os
 from utils import strDictParse, lemmatize, lemmatizer, extensionStopWords, saveData, loadData
 from tqdm import tqdm, trange
-import time
 
 import nltk
 from nltk.corpus import stopwords
@@ -56,6 +55,7 @@ class DataPreparation:
             self.prepDF.drop(columns=drop_columns, axis=1, inplace=True)
 
             self.prepDF['Description'] = self.prepDF['Description'].replace(np.nan, ' ')
+            self.prepDF.Name = self.prepDF.Name.replace(np.nan, ' ')
             for col in parseColumns[:-1]:
                 self.prepDF[col] = self.prepDF[col].apply(
                     lambda x: strDictParse(x, *[self.regexPatterns[col][i] for i in range(5)]))

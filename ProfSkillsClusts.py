@@ -193,9 +193,10 @@ class modelProcess():
         resumeTokenVect = np.array([1 if token in prepResume else 0 for token in self.vocab], dtype=np.uint)
         currentClustVacs = self.oneHotSkills[(self.resDF['TopicLabel'] == clust).values]
         cosMetr = currentClustVacs.values.dot(resumeTokenVect)/np.linalg.norm(currentClustVacs.values, axis=1)
+        topVacsIndex = currentClustVacs.index[np.argpartition(cosMetr, kth=-nRecVacs)[-nRecVacs:]]
 
         # отсюда достать индексы и отправить в ориг датасет с них достать строки
-        recVacsDF = self.resDF.iloc[np.argpartition(cosMetr, kth=-nRecVacs)[-nRecVacs:], :]
+        recVacsDF = self.resDF.iloc[topVacsIndex, :]
         dataOrig = pd.read_csv(pathOrigData, index_col=0)
 
         useColumns = ['Ids', 'Employer', 'Name', 'Salary', 'From', 'To', 'Experience', 'Schedule', 'Keys',

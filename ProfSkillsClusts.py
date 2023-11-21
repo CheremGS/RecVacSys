@@ -180,20 +180,24 @@ class modelProcess():
         outerSkills = list(set(top_terms) - set(prepResume))
         print(outerSkills)
 
-        print("Рекомедую изучить следующие навыки:")
+
         simCosine = np.zeros(shape=(len(prepResume), len(outerSkills)))
         for i, resumeSkill in enumerate(prepResume):
             a = self.oneHotSkills.loc[:, resumeSkill].values
             for j, clustSkill in enumerate(outerSkills):
                 b = self.oneHotSkills.loc[:, clustSkill].values
                 simCosine[i, j] = a.dot(b)/(np.linalg.norm(a) * np.linalg.norm(b))
-        print([outerSkills[x] for x in np.argpartition(simCosine.mean(axis=0), kth=-nRecSkills)[-nRecSkills:]])
 
-        print("Рекомендуемые вакансии")
+        print("Рекомедую изучить следующие навыки: (близость к вашим навыкам)")
+        topInds = np.argpartition(simCosine.mean(axis=0), kth=-nRecSkills)[-nRecSkills:]
+        for x in topInds:
+            print(f'{outerSkills[x]}: {simCosine.mean(axis=0)[x]}', end='\n')
+
         resumeTokenVect = np.array([1 if token in prepResume else 0 for token in self.vocab], dtype=np.uint)
         currentClustVacs = self.oneHotSkills[(self.resDF['TopicLabel'] == clust).values]
         cosMetr = currentClustVacs.values.dot(resumeTokenVect)/np.linalg.norm(currentClustVacs.values, axis=1)
-        topVacsIndex = currentClustVacs.index[np.argpartition(cosMetr, kth=-nRecVacs)[-nRecVacs:]]
+        topCos = np.argpartition(cosMetr, kth=-nRecVacs)[-nRecVacs:]
+        topVacsIndex = currentClustVacs.index[topCos]
 
         # отсюда достать индексы и отправить в ориг датасет с них достать строки
         recVacsDF = self.resDF.iloc[topVacsIndex, :]
@@ -203,8 +207,11 @@ class modelProcess():
                       'Description']
         drop_columns = set(dataOrig.columns) - set(useColumns)
         dataOrig.drop(columns=drop_columns, axis=1, inplace=True)
+        recDf = dataOrig.iloc[recVacsDF.index, :]
+        recDf['resume similarity'] = cosMetr[topCos]
+        del recDf[recDf['resume similarity'] == 0]
 
-        saveData(dataOrig.iloc[recVacsDF.index, :], pathSaveRecsVacs)
+        saveData(recDf, pathSaveRecsVacs)
 
 
 

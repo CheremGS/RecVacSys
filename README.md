@@ -5,3 +5,4 @@ ToDo:
 * ~~NMF clusterization~~
 * Filter keySkill words
 * Related work
+* Use foreign data source

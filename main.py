@@ -47,7 +47,7 @@ if __name__ == '__main__':
     NVacRecs: int = 20
     NskillsRecs: int = 7
 
-    LDAmodelConfig = {"num_topics": 60,
+    LDAmodelConfig = {"num_topics": 80,
                       'eta': 0.8,
                       "alpha": 'auto',
                       "random_state": 0,

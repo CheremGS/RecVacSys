@@ -209,9 +209,10 @@ class modelProcess():
         dataOrig.drop(columns=drop_columns, axis=1, inplace=True)
         recDf = dataOrig.iloc[recVacsDF.index, :]
         recDf['resume similarity'] = cosMetr[topCos]
-        # recDf = recDf[recDf['resume similarity'] > 0]
-
         saveData(recDf, pathSaveRecsVacs)
+
+        # salary estimation
+
 
 
 

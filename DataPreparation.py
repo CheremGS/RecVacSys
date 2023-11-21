@@ -56,9 +56,8 @@ class DataPreparation:
 
             self.prepDF['Description'] = self.prepDF['Description'].replace(np.nan, ' ')
             self.prepDF.Name = self.prepDF.Name.replace(np.nan, ' ')
-            for col in parseColumns[:-1]:
-                self.prepDF[col] = self.prepDF[col].apply(
-                    lambda x: strDictParse(x, *[self.regexPatterns[col][i] for i in range(5)]))
+            self.prepDF['Keys'] = self.prepDF['Keys'].apply(
+                    lambda x: strDictParse(x, *[self.regexPatterns['Keys'][i] for i in range(5)]))
 
             self._get_skillSet()
         else:

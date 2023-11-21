@@ -1,9 +1,12 @@
 from DataPreparation import DataPreparation
 from ProfSkillsClusts import modelProcess
-
+from modelBuilder import CatBoostModel
+from utils import lemmatize
+from utils import saveData
 
 def main(mConfig: dict,
          resume: str,
+         regrConfig: dict,
          dataPath: str = './data/database.csv',
          pathLemmasTexts: str = './data/prepdf9000.csv',
          nameClustModel: str = 'LdaModel9000.pkl',
@@ -38,6 +41,16 @@ def main(mConfig: dict,
                                         nRecSkills=NrecSkills,
                                         pathOrigData=dataPath)
 
+    salaryModel = CatBoostModel(config=regrConfig)
+
+    target = preparedDf[preparedDf['Salary'] & ~preparedDf['Description'].isnull()][['From', 'To']].mean(axis=1)
+    target = target[(target < 500000) & (target > 40000)]
+    X_data = preparedDf.loc[target.index, ['Schedule', 'Experience', 'Description']]
+
+    salaryModel.train(X_data, target.values)
+    saveData(salaryModel.inference(lemmatize(resume, delSymbPattern=topicModel.descRP, tokens=topicModel.vocab)),
+             './data/SalaryEstimation.csv')
+
 
 if __name__ == '__main__':
     dataPath: str = './data/db10500.csv'
@@ -57,12 +70,23 @@ if __name__ == '__main__':
 
     NMFmodelConfig = {'n_components': 80,
                       'random_state': 0}
-    NMFmodelName = 'LDAmodel10500.pkl'
+    NMFmodelName = 'NMFmodel10500.pkl'
 
-    modelType = 'LDA'
+    modelType = 'NMF'
     resume = 'Знаю на хорошем уровне плис, микроконтроллер, stm32'
 
-    main(dataPath=dataPath,
+    regrConfig = {'text_features': ['Description'],
+                  'cat_features': ['Experience', 'Schedule'],
+                  'loss_function': "RMSE",
+                  'learning_rate': 0.25,
+                  'iterations': 300,
+                  'depth': 7,
+                  'verbose': 30,
+                  'random_state': 0,
+                  'task_type': "GPU"}
+
+    main(regrConfig=regrConfig,
+         dataPath=dataPath,
          pathLemmasTexts=pathLemmasTexts,
          saveDirModels=saveDirModels,
          Nrecs=NVacRecs,

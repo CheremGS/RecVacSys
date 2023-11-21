@@ -57,9 +57,9 @@ if __name__ == '__main__':
 
     NMFmodelConfig = {'n_components': 80,
                       'random_state': 0}
-    NMFmodelName = 'NMFmodel10500.pkl'
+    NMFmodelName = 'LDAmodel10500.pkl'
 
-    modelType = 'NMF'
+    modelType = 'LDA'
     resume = 'Знаю на хорошем уровне плис, микроконтроллер, stm32'
 
     main(dataPath=dataPath,

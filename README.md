@@ -3,7 +3,7 @@ ToDo:
 * ~~Code optimization for saving data~~
 * Correct cluster prof names (exist prob for "c++ c++" name)
 * ~~NMF clusterization~~
-* Refactor main function and model Class
+* ~~Refactor main function and model Class~~
 * Filter keySkill words
 * Related work
 * Use foreign data source

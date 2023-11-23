@@ -1,8 +1,6 @@
 from DataPreparation import DataPreparation
-from ProfSkillsClusts import modelProcess
-from modelBuilder import CatBoostModel
-from utils import lemmatize
-from utils import saveData
+from RecSkillsProfSalary import ModelsRunner
+
 
 def main(mConfig: dict,
          resume: str,
@@ -10,7 +8,6 @@ def main(mConfig: dict,
          dataPath: str = './data/database.csv',
          pathLemmasTexts: str = './data/prepdf9000.csv',
          nameClustModel: str = 'LdaModel9000.pkl',
-         saveDirModels: str = './models',
          Nrecs: int = 10,
          NrecSkills: int = 10,
          modelType: str = 'LDA',
@@ -21,35 +18,21 @@ def main(mConfig: dict,
                  pathSaveLemmasTexts=pathLemmasTexts,
                  oneHotSavePath=oneHotSkillsPath)
 
-    preparedDf = dataPrep.prepDF
-    topicModel = modelProcess(prepareDF=preparedDf,
-                              descriptionRegexPattern=dataPrep.regexPatterns['Description'],
-                              vocab=dataPrep.skillSet,
-                              oneHotSkills=dataPrep.oneHotSkills,
-                              modelType=modelType)
-    if modelType == 'LDA':
-        topicModel.LDA_fit_predict(modelName=nameClustModel,
-                                   savePath=saveDirModels,
-                                   modelConfig=mConfig)
-    elif modelType == 'NMF':
-        topicModel.NMF_fit_predict(modelName=nameClustModel,
-                                   savePath=saveDirModels,
-                                   modelConfig=mConfig)
+    mr = ModelsRunner(prepareDF=dataPrep.prepDF,
+                      descriptionRegexPattern=dataPrep.regexPatterns['Description'],
+                      vocab=dataPrep.skillSet,
+                      oneHotSkills=oneHotSkillsPath,
+                      modelType=modelType,
+                      modelPath=nameClustModel,
+                      modelConfig=mConfig,
+                      regrConfig=regrConfig)
 
-    topicModel.recommendProfsSkillsVacs(resume=resume,
-                                        nRecVacs=Nrecs,
-                                        nRecSkills=NrecSkills,
-                                        pathOrigData=dataPath)
-
-    salaryModel = CatBoostModel(config=regrConfig)
-
-    target = preparedDf[preparedDf['Salary'] & ~preparedDf['Description'].isnull()][['From', 'To']].mean(axis=1)
-    target = target[(target < 500000) & (target > 40000)]
-    X_data = preparedDf.loc[target.index, ['Schedule', 'Experience', 'Description']]
-
-    salaryModel.train(X_data, target.values)
-    saveData(salaryModel.inference(lemmatize(resume, delSymbPattern=topicModel.descRP, tokens=topicModel.vocab)),
-             './data/SalaryEstimation.csv')
+    cluster_num, prep_resume = mr.run_process(resume=resume)
+    mr.run_recomends(clust=cluster_num,
+                     prepResume=prep_resume,
+                     nRecVacs=Nrecs,
+                     nRecSkills=NrecSkills,
+                     pathOrigData=dataPath)
 
 
 if __name__ == '__main__':
@@ -60,20 +43,23 @@ if __name__ == '__main__':
     NVacRecs: int = 20
     NskillsRecs: int = 7
 
-    LDAmodelConfig = {"num_topics": 80,
-                      'eta': 0.8,
-                      "alpha": 'auto',
-                      "random_state": 0,
-                      "update_every": 1,
-                      "chunksize": 100}
-    LDAmodelName = 'LdaModel10500.pkl'
-
-    NMFmodelConfig = {'n_components': 80,
-                      'random_state': 0}
-    NMFmodelName = 'NMFmodel10500.pkl'
-
     modelType = 'NMF'
-    resume = 'Знаю на хорошем уровне плис, микроконтроллер, stm32'
+    if modelType == 'LDA':
+        modelConfig = {"num_topics": 80,
+                          'eta': 0.8,
+                          "alpha": 'auto',
+                          "random_state": 0,
+                          "update_every": 1,
+                          "chunksize": 100}
+        modelName = './models/LdaModel10500.pkl'
+
+    elif modelType == 'NMF':
+        modelConfig = {'n_components': 80,
+                          'random_state': 0}
+        modelName = './models/NMFmodel10500.pkl'
+
+
+    resume = 'Знаю на хорошем уровне python, api, ml'
 
     regrConfig = {'text_features': ['Description'],
                   'cat_features': ['Experience', 'Schedule'],
@@ -88,11 +74,10 @@ if __name__ == '__main__':
     main(regrConfig=regrConfig,
          dataPath=dataPath,
          pathLemmasTexts=pathLemmasTexts,
-         saveDirModels=saveDirModels,
          Nrecs=NVacRecs,
          NrecSkills=NskillsRecs,
-         mConfig=NMFmodelConfig,
-         nameClustModel=NMFmodelName,
+         mConfig=modelConfig,
+         nameClustModel=modelName,
          resume=resume,
          modelType=modelType,
          oneHotSkillsPath=oneHotSkill)

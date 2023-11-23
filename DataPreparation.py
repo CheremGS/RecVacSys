@@ -42,7 +42,8 @@ class DataPreparation:
         assert len(skill_set) > 0, 'Длина массива названий навыков равна нулю! (len(skillSet) = 0)'
         self.skillSet = list(set([lemmatizer.parse(word)[0].normal_form for word in skill_set]))
 
-    def parseDictCols(self, parseColumns: list,
+    def parseDictCols(self,
+                      parseColumns: list,
                       skillTokens:bool = True,
                       stopWords:list = [],
                       saveDF: str = './data/prepdf.csv') -> None:

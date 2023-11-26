@@ -1,5 +1,5 @@
 from DataPreparation import DataPreparation
-from RecSkillsProfSalary import ModelsRunner
+from PecomendProcess import ModelsRunner
 
 
 def main(mConfig: dict,

@@ -8,6 +8,7 @@ def main(mConfig: dict,
          dataPath: str = './data/database.csv',
          pathLemmasTexts: str = './data/prepdf9000.csv',
          nameClustModel: str = 'LdaModel9000.pkl',
+         regrNameModel: str = './models/CatBoostModel10500.cbm',
          Nrecs: int = 10,
          NrecSkills: int = 10,
          modelType: str = 'LDA',
@@ -25,7 +26,8 @@ def main(mConfig: dict,
                       modelType=modelType,
                       modelPath=nameClustModel,
                       modelConfig=mConfig,
-                      regrConfig=regrConfig)
+                      regrConfig=regrConfig,
+                      regrModelPath=regrNameModel)
 
     cluster_num, prep_resume = mr.run_process(resume=resume)
     mr.run_recomends(clust=cluster_num,
@@ -36,29 +38,28 @@ def main(mConfig: dict,
 
 
 if __name__ == '__main__':
-    dataPath: str = './data/db10500.csv'
-    pathLemmasTexts: str = './data/prepdf10500.csv'
-    saveDirModels: str = './models'
-    oneHotSkill: str = './data/OHS10500.csv'
+    dataPath: str = './data/foreigndb_20000.csv'
+    pathLemmasTexts: str = './data/prepdf20000.csv'
+    oneHotSkill: str = './data/OHS20000.csv'
     NVacRecs: int = 20
     NskillsRecs: int = 7
 
-    modelType = 'NMF'
+    modelType = 'LDA'
     if modelType == 'LDA':
-        modelConfig = {"num_topics": 80,
+        modelConfig = {"num_topics": 100,
                           'eta': 0.8,
                           "alpha": 'auto',
                           "random_state": 0,
                           "update_every": 1,
                           "chunksize": 100}
-        modelName = './models/LdaModel10500.pkl'
+        modelName = './models/LdaModel20.pkl'
 
     elif modelType == 'NMF':
         modelConfig = {'n_components': 80,
                           'random_state': 0}
         modelName = './models/NMFmodel10500.pkl'
 
-
+    regrModelName = './models/CatBoostModel20.cbm'
     resume = 'Знаю на хорошем уровне python, api, ml'
 
     regrConfig = {'text_features': ['Description'],
@@ -67,7 +68,7 @@ if __name__ == '__main__':
                   'learning_rate': 0.25,
                   'iterations': 300,
                   'depth': 7,
-                  'verbose': 30,
+                  'verbose': False,
                   'random_state': 0,
                   'task_type': "GPU"}
 

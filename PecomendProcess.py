@@ -15,7 +15,8 @@ class ModelsRunner:
                  modelPath: str,
                  modelType: str,
                  modelConfig: dict,
-                 regrConfig: dict):
+                 regrConfig: dict,
+                 regrModelPath: str):
         self.resDF = prepareDF
         self.id2word = None
         self.encodeCorpus = None
@@ -24,11 +25,13 @@ class ModelsRunner:
         self.vocab = vocab
         self.oneHotSkills = oneHotSkills
 
-        self.model = None
+        self.modelWrap = None
         self.modelType = modelType
         self.modelPath = modelPath
         self.modelConfig = modelConfig
+
         self.regrConfig = regrConfig
+        self.regrPath = regrModelPath
 
     def run_process(self, resume: str):
         # init model object
@@ -53,7 +56,7 @@ class ModelsRunner:
         modelWrap.model_eval(topicTermData='./data/descriptionTopics.csv')
         clust, prepResume = modelWrap.inference(resume)
 
-        self.model = modelWrap
+        self.modelWrap = modelWrap
         return clust, prepResume
 
     def recomend_prof(self, listProffesions: list[str], stopwordsProfs: list[str]) -> None:
@@ -65,25 +68,26 @@ class ModelsRunner:
 
         resProf = np.unique(np.array(normProfName), return_counts=True)
         topInd = np.argpartition(resProf[1], -2)[-2:]
-        print("Рекомендуемая профессия: " + " ".join([resProf[0][i] for i in topInd]))
+        print("\n- Рекомендуемая профессия: " + " ".join([resProf[0][i] for i in topInd]))
 
     def recomend_skills(self, clust: int,
                         prepResume: list[str],
                         nRecSkills: int) -> None:
         top_terms = []
         if self.modelType == "LDA":
-            top_terms = self.model.model.print_topic(clust, topn=len(prepResume) + int(nRecSkills * 1.5))
+            top_terms = self.modelWrap.model.print_topic(clust, topn=len(prepResume) + int(nRecSkills * 1.5))
             # out in top_terms for example: 0.042*"react" + 0.040*"js" + 0.030*"git" + 0.029*"frontend"
             top_terms = re.findall(re.compile(r'"\w+"'), top_terms)
             top_terms = [x[1:-1] for x in top_terms if '_' not in x]
 
         elif self.modelType == "NMF":
-            feature_names = self.model.vectorizer.get_feature_names_out()
-            top_ids_words = self.model.model.components_[clust].argsort()[-(len(prepResume) + int(nRecSkills * 1.5)):][
+            feature_names = self.modelWrap.vectorizer.get_feature_names_out()
+            top_ids_words = self.modelWrap.model.components_[clust].argsort()[-(len(prepResume) + int(nRecSkills * 1.5)):][
                             ::-1]
             top_terms = [feature_names[i] for i in top_ids_words]
 
         outerSkills = list(set(top_terms) - set(prepResume))
+        print("\n- Самые распространненые навыки в кластере профессий:")
         print(outerSkills)
 
         simCosine = np.zeros(shape=(len(prepResume), len(outerSkills)))
@@ -93,10 +97,11 @@ class ModelsRunner:
                 b = self.oneHotSkills.loc[:, clustSkill].values
                 simCosine[i, j] = a.dot(b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
-        print("Рекомедую изучить следующие навыки: (близость к вашим навыкам)")
+        print("\n- Рекомедую изучить следующие навыки(частота встречаемости с вашими навыками)")
         topInds = np.argpartition(simCosine.mean(axis=0), kth=-nRecSkills)[-nRecSkills:]
-        for x in topInds:
-            print(f'{outerSkills[x]}: {simCosine.mean(axis=0)[x]}', end='\n')
+        for i, x in enumerate(topInds):
+            print(f'%-15s| %1.5f' % (f'{i+1}) ' + outerSkills[x], simCosine.mean(axis=0)[x]), end='\n')
+        print('\n')
 
     def recomend_vacancies(self,
                            clust: int,
@@ -105,13 +110,13 @@ class ModelsRunner:
                            pathOrigData: str,
                            pathSaveResultVacs: str) -> None:
         resumeTokenVect = np.array([1 if token in prepResume else 0 for token in self.vocab], dtype=np.uint)
-        currentClustVacs = self.oneHotSkills[(self.model.resDF['TopicLabel'] == clust).values]
+        currentClustVacs = self.oneHotSkills[(self.modelWrap.resDF['TopicLabel'] == clust).values]
         cosMetr = currentClustVacs.values.dot(resumeTokenVect) / np.linalg.norm(currentClustVacs.values, axis=1)
         topCos = np.argpartition(cosMetr, kth=-nRecVacs)[-nRecVacs:]
         topVacsIndex = currentClustVacs.index[topCos]
 
         # отсюда достать индексы и отправить в ориг датасет с них достать строки
-        recVacsDF = self.model.resDF.iloc[topVacsIndex, :]
+        recVacsDF = self.modelWrap.resDF.iloc[topVacsIndex, :]
         dataOrig = pd.read_csv(pathOrigData, index_col=0)
 
         useColumns = ['Ids', 'Employer', 'Name', 'Salary', 'From', 'To', 'Experience', 'Schedule', 'Keys',
@@ -124,12 +129,12 @@ class ModelsRunner:
 
     def recomend_salary(self, prepResume: list[str]):
         salaryModel = CatBoostModel(config=self.regrConfig)
-        target = self.model.resDF[self.model.resDF['Salary'] & ~self.model.resDF['Description'].isnull()][
+        target = self.modelWrap.resDF[self.modelWrap.resDF['Salary'] & ~self.modelWrap.resDF['Description'].isnull()][
             ['From', 'To']].mean(axis=1)
         target = target[(target < 500000) & (target > 40000)]
-        X_data = self.model.resDF.loc[target.index, ['Schedule', 'Experience', 'Description']]
+        X_data = self.modelWrap.resDF.loc[target.index, ['Schedule', 'Experience', 'Description']]
+        salaryModel.train(X_data, target.values, self.regrPath)
 
-        salaryModel.train(X_data, target.values)
         saveData(salaryModel.inference(' '.join(prepResume)),
                  './data/SalaryEstimation.csv')
 
@@ -141,7 +146,7 @@ class ModelsRunner:
                       pathOrigData:str = './data/database.csv',
                       pathSaveRecsVacs: str = './data/Recomendations.csv') -> None:
 
-        nameProfs = self.model.resDF[self.model.resDF['TopicLabel'] == clust]['Name'].values
+        nameProfs = self.modelWrap.resDF[self.modelWrap.resDF['TopicLabel'] == clust]['Name'].values
 
         self.recomend_prof(listProffesions=nameProfs, stopwordsProfs=['junior', 'senior', 'middle'])
 

@@ -10,6 +10,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 import re
+import os
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -160,11 +161,19 @@ class CatBoostModel:
         self.config = config
         self.model = CatBoostRegressor(**config)
 
-    def train(self, X, y, printLoss=True):
-        self.model.fit(X, y)
+    def train(self, X, y, savePath, printLoss=True):
+
+        if not os.path.exists(savePath):
+            print('\nОбучение модели предсказания заработной платы...')
+            self.model.fit(X, y)
+            self.model.save_model(savePath)
+            print(f'Модель сохранена в "{savePath}"')
+        else:
+            print('\nНайдена обученная ранее модель. Загрузка модели...')
+            self.model.load_model(savePath)
 
         self.infer_table = X.groupby(['Schedule', 'Experience'], as_index=False).size()
-        if printLoss:
+        if printLoss and not os.path.exists(savePath):
             # print relative RMSE
             print(f"Best model relative RMSEloss: {self.model.best_score_['learn']['RMSE'] / (y.max() - y.min())}")
 

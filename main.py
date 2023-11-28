@@ -1,5 +1,5 @@
 from DataPreparation import DataPreparation
-from PecomendProcess import ModelsRunner
+from RecomendProcess import ModelsRunner
 
 
 def main(mConfig: dict,
@@ -38,29 +38,30 @@ def main(mConfig: dict,
 
 
 if __name__ == '__main__':
-    dataPath: str = './data/foreigndb_20000.csv'
-    pathLemmasTexts: str = './data/prepdf20000.csv'
-    oneHotSkill: str = './data/OHS20000.csv'
+    dataPath: str = './data/db10500.csv'
+    pathLemmasTexts: str = './data/prepdf10500.csv'
+    oneHotSkill: str = './data/OHS10500.csv'
     NVacRecs: int = 20
     NskillsRecs: int = 7
 
-    modelType = 'LDA'
+    modelType = 'NMF'
     if modelType == 'LDA':
-        modelConfig = {"num_topics": 100,
-                          'eta': 0.8,
-                          "alpha": 'auto',
-                          "random_state": 0,
-                          "update_every": 1,
-                          "chunksize": 100}
-        modelName = './models/LdaModel20.pkl'
+        modelConfig = {"num_topics": 72,
+                       'eta': 0.8,
+                       "alpha": 'auto',
+                       "random_state": 0,
+                       "update_every": 1,
+                       "chunksize": 100,
+                       "passes": 5}
+        modelName = './models/LdaModel10500.pkl'
 
     elif modelType == 'NMF':
-        modelConfig = {'n_components': 80,
-                          'random_state': 0}
+        modelConfig = {'n_components': 60,
+                       'random_state': 0}
         modelName = './models/NMFmodel10500.pkl'
 
-    regrModelName = './models/CatBoostModel20.cbm'
-    resume = 'Знаю на хорошем уровне python, api, ml'
+    regrModelName = './models/CatBoostModel10500tp.cbm'
+    resume = 'Знаю на хорошем уровне c++, плис, stm32'
 
     regrConfig = {'text_features': ['Description'],
                   'cat_features': ['Experience', 'Schedule'],

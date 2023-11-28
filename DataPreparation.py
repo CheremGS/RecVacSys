@@ -36,11 +36,12 @@ class DataPreparation:
         self.prepDF = self.originDF.copy().drop(columns=drop_columns, axis=1)
 
     def _get_skillSet(self) -> None:
-        print('Создание списка всех навыков...')
+        print('Создание списка всех навыков...', end=' ')
         vacancies = list(self.prepDF["Keys"].apply(lambda x: x if x else ['None']).values)
         skill_set = list(set([skill for vacancy_skills in vacancies for skill in vacancy_skills]))
         assert len(skill_set) > 0, 'Длина массива названий навыков равна нулю! (len(skillSet) = 0)'
         self.skillSet = list(set([lemmatizer.parse(word)[0].normal_form for word in skill_set]))
+        print('Список создан.')
 
     def parseDictCols(self,
                       parseColumns: list,
@@ -62,7 +63,7 @@ class DataPreparation:
 
             self._get_skillSet()
         else:
-            print("Обработка текстового описания всех вакансий...")
+
             self.prepDF = self.prepDF[~self.prepDF.Description.isnull()]
 
             for col in parseColumns[:-1]:
@@ -70,12 +71,13 @@ class DataPreparation:
                     lambda x: strDictParse(x, *[self.regexPatterns[col][i] for i in range(5)]))
 
             self._get_skillSet()
+            print("Обработка текстового описания всех вакансий...", end=' ')
             self.prepDF['Description'] = self.prepDF['Description'].apply(lambda x: lemmatize(x,
                                                                           self.regexPatterns['Description'],
                                                                           stops=stopWords,
                                                                           tokens=self.skillSet if skillTokens else None))
-
             saveData(self.prepDF, saveDF)
+            print("Обработка заверешена, данные сохранены.")
 
     def compute_oneHotSkill(self, savePath: str):
         if os.path.exists(savePath):

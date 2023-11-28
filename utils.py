@@ -5,7 +5,7 @@ import pandas as pd
 import pickle
 
 lemmatizer = pymorphy2.MorphAnalyzer(lang='ru')
-extensionStopWords = ['опыт', "работа", 'знание', 'требование', 'компания', "команда", "оклад", "хотеть"
+extensionStopWords = ['опыт', "работа", 'знание', 'требование', 'компания', "команда", "оклад", "хотеть",
                       'плюс', 'навык', 'сервис', 'предлагать', 'развитие', 'продукт',
                       'принцип', 'уровень', 'бизнес', 'наш', 'участие', 'процесс', 'новый',
                       'технический', 'условие', 'офис', 'решение', 'приложение', 'год',
@@ -38,7 +38,19 @@ extensionStopWords = ['опыт', "работа", 'знание', 'требов�
                       'савёловский', 'белорусский', 'подразделение', 'читать', 'код', "разработчик",
                       "сфера", "интересный", "тк", 'россия', 'обучение', "программирование", 'ит',
                       "аналитика", "аналитик", "интеграция"]
+REPLACE_TOKENS = {'k8s': 'kubernetes',
+                  'джава': 'java',
+                  'javascript': 'js',
+                  'с++': 'c++', # first symbol is russian, second is english
+                  ' си ': ' c ',
+                  '+': ' ',
+                  '++': '+'}
 
+def token_replace(string):
+    rep = dict((re.escape(k), v) for k, v in REPLACE_TOKENS.items())
+    pattern = re.compile("|".join(rep.keys()))
+    string = pattern.sub(lambda m: rep[re.escape(m.group(0))], string)
+    return string
 
 def strDictParse(x: str, pattern: str,
                  integr: bool = False,
@@ -66,7 +78,10 @@ def lemmatize(text: str, delSymbPattern: str,
               bounds: bool = True,
               centerSlice: float = 0.5,
               sliceRadius: int = 100) -> str:
+
     text_preps = re.sub(delSymbPattern, ' ', text.lower())
+    text_preps = token_replace(text_preps)
+
     lenText = len(text_preps.split())
     if tokens:
         s = []

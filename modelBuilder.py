@@ -56,7 +56,6 @@ class LDAmodel(TopicModel):
         trigram = gensim.models.Phrases(bigram[text], threshold=5)
         bigram_mod = gensim.models.phrases.Phraser(bigram)
         trigram_mod = gensim.models.phrases.Phraser(trigram)
-
         textPrepData = trigram_mod[bigram_mod[text]]
 
         self.id2word = corpora.Dictionary(textPrepData)
@@ -108,7 +107,7 @@ class LDAmodel(TopicModel):
         coherence_lda = coherence_model_lda.get_coherence()
         print('\nCoherence Score: ', coherence_lda)
 
-        for topic in self.model.show_topics():
+        for topic in self.model.show_topics(num_topics=72):
             sks = re.findall(re.compile(r'"\w+"'), topic[1])
             descrTopics[topic[0]] = ' '.join([x[1:-1] for x in sks])
 

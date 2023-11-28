@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from utils import lemmatize, saveData, loadData
 from modelBuilder import LDAmodel, NMFmodel, CatBoostModel
+from collections import Counter
 
 
 class ModelsRunner:
@@ -62,13 +63,14 @@ class ModelsRunner:
     def recomend_prof(self, listProffesions: list[str], stopwordsProfs: list[str]) -> None:
         normProfName = []
         for prof in listProffesions:
-            normProfName.extend(lemmatize(prof, self.descRP,
+            normProfName.append(' '.join(set(lemmatize(prof, self.descRP,
                                           stops=stopwordsProfs,
-                                          tokens=self.vocab).split())
+                                          tokens=self.vocab).split())))
 
-        resProf = np.unique(np.array(normProfName), return_counts=True)
-        topInd = np.argpartition(resProf[1], -2)[-2:]
-        print("\n- Рекомендуемая профессия: " + " ".join([resProf[0][i] for i in topInd]))
+        for x in Counter(normProfName).most_common():
+            if len(x[0].split()) > 1:
+                print("\n- Рекомендуемая профессия: " + x[0])
+                break
 
     def recomend_skills(self, clust: int,
                         prepResume: list[str],
@@ -100,7 +102,7 @@ class ModelsRunner:
         print("\n- Рекомедую изучить следующие навыки(частота встречаемости с вашими навыками)")
         topInds = np.argpartition(simCosine.mean(axis=0), kth=-nRecSkills)[-nRecSkills:]
         for i, x in enumerate(topInds):
-            print(f'%-15s| %1.5f' % (f'{i+1}) ' + outerSkills[x], simCosine.mean(axis=0)[x]), end='\n')
+            print(f'%-20s| %1.5f' % (f'{i+1}) ' + outerSkills[x], simCosine.mean(axis=0)[x]), end='\n')
         print('\n')
 
     def recomend_vacancies(self,
@@ -109,6 +111,7 @@ class ModelsRunner:
                            nRecVacs: int,
                            pathOrigData: str,
                            pathSaveResultVacs: str) -> None:
+        print('Подбор подходящих вакансий...', end=' ')
         resumeTokenVect = np.array([1 if token in prepResume else 0 for token in self.vocab], dtype=np.uint)
         currentClustVacs = self.oneHotSkills[(self.modelWrap.resDF['TopicLabel'] == clust).values]
         cosMetr = currentClustVacs.values.dot(resumeTokenVect) / np.linalg.norm(currentClustVacs.values, axis=1)
@@ -125,9 +128,11 @@ class ModelsRunner:
         dataOrig.drop(columns=drop_columns, axis=1, inplace=True)
         recDf = dataOrig.iloc[recVacsDF.index, :]
         recDf['resume similarity'] = cosMetr[topCos]
+        print('Вакансии подобраны.', end=' ')
         saveData(recDf, pathSaveResultVacs)
 
     def recomend_salary(self, prepResume: list[str]):
+        print('Оценка средней зароботной платы...', end=' ')
         salaryModel = CatBoostModel(config=self.regrConfig)
         target = self.modelWrap.resDF[self.modelWrap.resDF['Salary'] & ~self.modelWrap.resDF['Description'].isnull()][
             ['From', 'To']].mean(axis=1)
@@ -135,6 +140,7 @@ class ModelsRunner:
         X_data = self.modelWrap.resDF.loc[target.index, ['Schedule', 'Experience', 'Description']]
         salaryModel.train(X_data, target.values, self.regrPath)
 
+        print('Оценка завершена.', end=' ')
         saveData(salaryModel.inference(' '.join(prepResume)),
                  './data/SalaryEstimation.csv')
 
@@ -148,7 +154,8 @@ class ModelsRunner:
 
         nameProfs = self.modelWrap.resDF[self.modelWrap.resDF['TopicLabel'] == clust]['Name'].values
 
-        self.recomend_prof(listProffesions=nameProfs, stopwordsProfs=['junior', 'senior', 'middle'])
+        self.recomend_prof(listProffesions=nameProfs, stopwordsProfs=['junior', 'senior', 'middle',
+                                                                      'старший', 'младший'])
 
         self.recomend_skills(clust=clust,
                              prepResume=prepResume,

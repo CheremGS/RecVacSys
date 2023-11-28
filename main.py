@@ -44,7 +44,7 @@ if __name__ == '__main__':
     NVacRecs: int = 20
     NskillsRecs: int = 7
 
-    modelType = 'NMF'
+    modelType = 'LDA'
     if modelType == 'LDA':
         modelConfig = {"num_topics": 72,
                        'eta': 0.8,

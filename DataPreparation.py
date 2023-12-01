@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 import re
 import os
-from utils import strDictParse, lemmatize, lemmatizer, extensionStopWords, saveData, loadData
+from sklearn.feature_extraction.text import CountVectorizer
+from utils import strDictParse, lemmatize, lemmatizer, saveData, loadData, token_replace
 from tqdm import tqdm, trange
 
 import nltk
@@ -37,11 +38,19 @@ class DataPreparation:
 
     def _get_skillSet(self) -> None:
         print('Создание списка всех навыков...', end=' ')
-        vacancies = list(self.prepDF["Keys"].apply(lambda x: x if x else ['None']).values)
-        skill_set = list(set([skill for vacancy_skills in vacancies for skill in vacancy_skills]))
+
+        valKeys = self.prepDF["Keys"][~(self.prepDF["Keys"] != self.prepDF["Keys"])]
+        rawKeys = " ".join(valKeys.apply(lambda x: ' '.join(x)).values)
+        rawKeys = token_replace(rawKeys)
+        rawKeys = re.sub(self.regexPatterns['Description'], ' ', rawKeys)
+
+        skill_set = list(set(rawKeys.strip().split()))
         assert len(skill_set) > 0, 'Длина массива названий навыков равна нулю! (len(skillSet) = 0)'
+
+        stop_skills = loadData('./data/keySkills_stopwords.txt')
         self.skillSet = list(set([lemmatizer.parse(word)[0].normal_form for word in skill_set]))
-        print('Список создан.')
+        self.skillSet = [x for x in self.skillSet if x not in stop_skills]
+        print("Список навыков собран.")
 
     def parseDictCols(self,
                       parseColumns: list,
@@ -80,17 +89,14 @@ class DataPreparation:
             print("Обработка заверешена, данные сохранены.")
 
     def compute_oneHotSkill(self, savePath: str):
-        if os.path.exists(savePath):
-            self.oneHotSkills = loadData(savePath)
-        else:
-            self.oneHotSkills = np.zeros((len(self.skillSet), self.prepDF.shape[0]), dtype=np.uint)
-            for i_vac in trange(self.prepDF.shape[0], desc='Процесс oneHot кодировки навыков по текстам вакансий'):
-                for i_skill in range(len(self.skillSet)):
-                    if self.skillSet[i_skill] in self.prepDF.iloc[i_vac, list(self.prepDF.columns).index('Description')]:
-                        self.oneHotSkills[i_skill, i_vac] = 1
+        self.oneHotSkills = np.zeros((len(self.skillSet), self.prepDF.shape[0]), dtype=np.uint)
+        corpus = self.prepDF['Description'].values
+        vectorizer = CountVectorizer(analyzer='word', vocabulary=self.skillSet)
+        self.oneHotSkills = vectorizer.fit_transform(corpus)
+        self.oneHotSkills = np.clip(self.oneHotSkills.toarray(), 0, 1)
 
-            self.oneHotSkills = pd.DataFrame(self.oneHotSkills.T, columns=self.skillSet)
-            saveData(self.oneHotSkills, savePath)
+        self.oneHotSkills = pd.DataFrame(self.oneHotSkills, columns=vectorizer.get_feature_names_out())
+        saveData(self.oneHotSkills, savePath)
 
     def run(self, baseTokenIsSkills:bool = True,
             pathSaveLemmasTexts = './data/prepdf.csv',
@@ -99,6 +105,8 @@ class DataPreparation:
         stops = stopwords.words('russian')
         stops_en = stopwords.words('english')
         stops.extend(stops_en)
+
+        extensionStopWords = loadData('./data/description_stopWords.txt')
         stops.extend(extensionStopWords)
 
         parseColumns = list(self.regexPatterns.keys())

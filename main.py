@@ -44,9 +44,9 @@ if __name__ == '__main__':
     NVacRecs: int = 20
     NskillsRecs: int = 7
 
-    modelType = 'LDA'
+    modelType = 'NMF'
     if modelType == 'LDA':
-        modelConfig = {"num_topics": 72,
+        modelConfig = {"num_topics": 100,
                        'eta': 0.8,
                        "alpha": 'auto',
                        "random_state": 0,
@@ -56,7 +56,7 @@ if __name__ == '__main__':
         modelName = './models/LdaModel10500.pkl'
 
     elif modelType == 'NMF':
-        modelConfig = {'n_components': 60,
+        modelConfig = {'n_components': 80,
                        'random_state': 0}
         modelName = './models/NMFmodel10500.pkl'
 

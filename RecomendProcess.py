@@ -54,7 +54,7 @@ class ModelsRunner:
 
         # eval model
         modelWrap.predict()
-        modelWrap.model_eval(topicTermData='./data/descriptionTopics.csv')
+        modelWrap.model_eval(topicTermData='./results/descriptionTopics.csv')
         clust, prepResume = modelWrap.inference(resume)
 
         self.modelWrap = modelWrap
@@ -142,7 +142,7 @@ class ModelsRunner:
 
         print('Оценка завершена.', end=' ')
         saveData(salaryModel.inference(' '.join(prepResume)),
-                 './data/SalaryEstimation.csv')
+                 './results/SalaryEstimation.csv')
 
     def run_recomends(self,
                       clust: int,
@@ -150,7 +150,7 @@ class ModelsRunner:
                       nRecVacs: int = 5,
                       nRecSkills: int = 5,
                       pathOrigData:str = './data/database.csv',
-                      pathSaveRecsVacs: str = './data/Recomendations.csv') -> None:
+                      pathSaveRecsVacs: str = './results/Recomendations.csv') -> None:
 
         nameProfs = self.modelWrap.resDF[self.modelWrap.resDF['TopicLabel'] == clust]['Name'].values
 

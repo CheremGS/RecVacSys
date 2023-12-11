@@ -107,7 +107,7 @@ class LDAmodel(TopicModel):
         coherence_lda = coherence_model_lda.get_coherence()
         print('\nCoherence Score: ', coherence_lda)
 
-        for topic in self.model.show_topics(num_topics=72):
+        for topic in self.model.show_topics(num_topics=150):
             sks = re.findall(re.compile(r'"\w+"'), topic[1])
             descrTopics[topic[0]] = ' '.join([x[1:-1] for x in sks])
 
@@ -148,7 +148,7 @@ class NMFmodel(TopicModel):
         plt.show()
 
         for topic_idx, topic_words in enumerate(self.model.components_):
-            top_words_idx = topic_words.argsort()[-10:][::-1]
+            top_words_idx = topic_words.argsort()[::-1]
             top_words = [feature_names[i] for i in top_words_idx]
             descrTopics[topic_idx + 1] = ' '.join(top_words)
 

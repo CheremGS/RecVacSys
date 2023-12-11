@@ -87,6 +87,9 @@ def saveData(data: object,
     elif extension == '.pkl':
         with open(filename, 'wb') as saveFile:
             pickle.dump(data, saveFile)
+    elif extension == '.txt':
+        with open(filename, 'w', encoding='utf-8') as file:
+            file.writelines([x+'\n' for x in data])
     else:
         assert False, 'Specified wrong file extension!'
 

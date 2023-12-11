@@ -56,12 +56,12 @@ if __name__ == '__main__':
         modelName = './models/LdaModel10500.pkl'
 
     elif modelType == 'NMF':
-        modelConfig = {'n_components': 80,
+        modelConfig = {'n_components': 100,
                        'random_state': 0}
         modelName = './models/NMFmodel10500.pkl'
 
-    regrModelName = './models/CatBoostModel10500tp.cbm'
-    resume = 'Знаю на хорошем уровне c++, плис, stm32'
+    regrModelName = './models/CatBoostModel10500.cbm'
+    resume = 'Знаю на хорошем уровне микроконтроллер, плис, stm32'
 
     regrConfig = {'text_features': ['Description'],
                   'cat_features': ['Experience', 'Schedule'],

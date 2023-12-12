@@ -43,25 +43,9 @@ if __name__ == '__main__':
     oneHotSkill: str = './data/OHS10500.csv'
     NVacRecs: int = 20
     NskillsRecs: int = 7
-
-    modelType = 'NMF'
-    if modelType == 'LDA':
-        modelConfig = {"num_topics": 100,
-                       'eta': 0.8,
-                       "alpha": 'auto',
-                       "random_state": 0,
-                       "update_every": 1,
-                       "chunksize": 100,
-                       "passes": 5}
-        modelName = './models/LdaModel10500.pkl'
-
-    elif modelType == 'NMF':
-        modelConfig = {'n_components': 100,
-                       'random_state': 0}
-        modelName = './models/NMFmodel10500.pkl'
-
     regrModelName = './models/CatBoostModel10500.cbm'
     resume = 'Знаю на хорошем уровне микроконтроллер, плис, stm32'
+    topicModelType = 'NMF'
 
     regrConfig = {'text_features': ['Description'],
                   'cat_features': ['Experience', 'Schedule'],
@@ -73,6 +57,23 @@ if __name__ == '__main__':
                   'random_state': 0,
                   'task_type': "GPU"}
 
+    if topicModelType == 'LDA':
+        modelConfig = {"num_topics": 72,
+                       'eta': 0.8,
+                       "alpha": 'auto',
+                       "random_state": 0,
+                       "update_every": 1,
+                       "chunksize": 100,
+                       "passes": 5}
+        modelName = './models/LdaModel10500.pkl'
+
+    elif topicModelType == 'NMF':
+        modelConfig = {'n_components': 120,
+                       'random_state': 0,
+                       'solver': 'mu',
+                       'beta_loss': 'kullback-leibler'}
+        modelName = './models/NMFmodel10500.pkl'
+
     main(regrConfig=regrConfig,
          dataPath=dataPath,
          pathLemmasTexts=pathLemmasTexts,
@@ -81,5 +82,5 @@ if __name__ == '__main__':
          mConfig=modelConfig,
          nameClustModel=modelName,
          resume=resume,
-         modelType=modelType,
+         modelType=topicModelType,
          oneHotSkillsPath=oneHotSkill)

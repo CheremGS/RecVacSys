@@ -8,6 +8,7 @@ from gensim.models import CoherenceModel
 from sklearn.decomposition import NMF
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import matplotlib.pyplot as plt
 
 import re
 import os
@@ -143,8 +144,17 @@ class NMFmodel(TopicModel):
     def model_eval(self, topicTermData):
         descrTopics = {}
         feature_names = self.vectorizer.get_feature_names_out()
-        sns.heatmap(cosine_similarity(self.model.components_)).set(xticklabels=[], yticklabels=[])
-        plt.title('Косинусная близость выделенных тематик')
+
+        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(18, 6))
+        sns.heatmap(cosine_similarity(self.model.components_), ax=ax[0])
+        ax[0].set_title('Косинусная близость выделенных тематик')
+        ax[0].set_xticks([])
+        ax[0].set_yticks([])
+        sns.heatmap(self.model.components_, ax=ax[1])
+        ax[1].set_title(r'Полученная матрица тематик\ключевых слов')
+        ax[1].set_xticks([])
+        ax[1].set_yticks([])
+        plt.tight_layout()
         plt.show()
 
         for topic_idx, topic_words in enumerate(self.model.components_):

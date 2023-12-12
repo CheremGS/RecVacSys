@@ -4,7 +4,7 @@ Program for job recommendations to job seekers.
 
 Recommendations of demanded skills, vacancies, and wages have been implemented (one of the most problematic issues at 
 the first interviews). Recommendations are selected from a database stored locally.
-
+#### [Colab demo](https://colab.research.google.com/drive/1EfZaISinrE69M_mJ6qTiUmRdKxoSiS6l#scrollTo=zXxYO9fwQLA2)
 ### ToDo:
 > Program
 > * ~~Metrics for models (ipynb, Jacarde Index Between cluster skills set (NMF), coherence in LDA)~~
@@ -14,7 +14,7 @@ the first interviews). Recommendations are selected from a database stored local
 > * ~~Correct prof names (exist prob for "c++ c++" name)~~
 > * ~~NMF clusterization~~
 > * ~~Refactor main function and model Class~~
-> * Filter keySkill words
+> * ~~Filter keySkill words~~
 > * ~~Use foreign data source~~
 
 > Report preparation

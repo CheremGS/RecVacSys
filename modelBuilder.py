@@ -57,7 +57,7 @@ class LDAmodel(TopicModel):
         trigram = gensim.models.Phrases(bigram[text], threshold=5)
         self.bigram_mod = gensim.models.phrases.Phraser(bigram)
         self.trigram_mod = gensim.models.phrases.Phraser(trigram)
-        textPrepData = self.bigram_mod[text] # textPrepData = self.trigram_mod[self.bigram_mod[text]]
+        textPrepData = self.trigram_mod[self.bigram_mod[text]]
 
         self.id2word = corpora.Dictionary(textPrepData)
         self.encodeCorpus = [self.id2word.doc2bow(text) for text in textPrepData]

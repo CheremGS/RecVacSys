@@ -55,9 +55,9 @@ class LDAmodel(TopicModel):
         # higher threshold fewer phrases.
         bigram = gensim.models.Phrases(text, min_count=5, threshold=5)
         trigram = gensim.models.Phrases(bigram[text], threshold=5)
-        bigram_mod = gensim.models.phrases.Phraser(bigram)
-        trigram_mod = gensim.models.phrases.Phraser(trigram)
-        textPrepData = trigram_mod[bigram_mod[text]]
+        self.bigram_mod = gensim.models.phrases.Phraser(bigram)
+        self.trigram_mod = gensim.models.phrases.Phraser(trigram)
+        textPrepData = self.bigram_mod[text] # textPrepData = self.trigram_mod[self.bigram_mod[text]]
 
         self.id2word = corpora.Dictionary(textPrepData)
         self.encodeCorpus = [self.id2word.doc2bow(text) for text in textPrepData]
@@ -82,7 +82,8 @@ class LDAmodel(TopicModel):
             'Опишите свои навыки более конкретно (после обработки резюме не было найдено ни одного навыка)'
 
         ques_vec = []
-        ques_vec = self.id2word.doc2bow(important_words.split())
+        infer_inp = self.trigram_mod[self.bigram_mod[important_words.split()]]
+        ques_vec = self.id2word.doc2bow(infer_inp)
 
         topic_vec = []
         topic_vec = self.model[ques_vec]

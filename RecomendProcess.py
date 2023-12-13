@@ -118,7 +118,6 @@ class ModelsRunner:
         topCos = np.argpartition(cosMetr, kth=-nRecVacs)[-nRecVacs:]
         topVacsIndex = currentClustVacs.index[topCos]
 
-        # отсюда достать индексы и отправить в ориг датасет с них достать строки
         recVacsDF = self.modelWrap.resDF.iloc[topVacsIndex, :]
         dataOrig = pd.read_csv(pathOrigData, index_col=0)
 

@@ -45,7 +45,7 @@ if __name__ == '__main__':
     NskillsRecs: int = 7
     regrModelName = './models/CatBoostModel10500.cbm'
     resume = 'Знаю на хорошем уровне микроконтроллер, плис, stm32'
-    topicModelType = 'NMF'
+    topicModelType = 'LDA'
 
     regrConfig = {'text_features': ['Description'],
                   'cat_features': ['Experience', 'Schedule'],
@@ -58,13 +58,11 @@ if __name__ == '__main__':
                   'task_type': "GPU"}
 
     if topicModelType == 'LDA':
-        modelConfig = {"num_topics": 72,
-                       'eta': 0.8,
-                       "alpha": 'auto',
+        modelConfig = {"num_topics": 70,
                        "random_state": 0,
                        "update_every": 1,
                        "chunksize": 100,
-                       "passes": 5}
+                       'minimum_probability': 0.005}
         modelName = './models/LdaModel10500.pkl'
 
     elif topicModelType == 'NMF':

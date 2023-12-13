@@ -44,8 +44,8 @@ if __name__ == '__main__':
     NVacRecs: int = 20
     NskillsRecs: int = 7
     regrModelName = './models/CatBoostModel10500.cbm'
-    resume = 'Знаю на хорошем уровне микроконтроллер, плис, stm32'
-    topicModelType = 'LDA'
+    resume = ''
+    topicModelType = 'NMF'
 
     regrConfig = {'text_features': ['Description'],
                   'cat_features': ['Experience', 'Schedule'],

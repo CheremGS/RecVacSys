@@ -41,11 +41,12 @@ if __name__ == '__main__':
     dataPath: str = './data/db10500.csv'
     pathLemmasTexts: str = './data/prepdf10500.csv'
     oneHotSkill: str = './data/OHS10500.csv'
-    NVacRecs: int = 20
-    NskillsRecs: int = 7
+    NVacRecs: int = 5
+    NskillsRecs: int = 5
     regrModelName = './models/CatBoostModel10500.cbm'
-    resume = ''
+    resume = 'design, photoshop, figma, ux, ui, 3d'
     topicModelType = 'NMF'
+
 
     regrConfig = {'text_features': ['Description'],
                   'cat_features': ['Experience', 'Schedule'],

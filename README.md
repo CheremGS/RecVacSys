@@ -1,21 +1,23 @@
 ### Project description
 
-Program for job recommendations. Recommendations are selected from a database stored locally.
+Job recommendations program. User specify skills from CV for program input. 
+Recommendations for those skills are selected from locally stored database.
 
-> Program output includes:
-> * Professional specialization(for example android-developer, web-developer, программист-инженер)
-> * Most popular skills for return specialization
-> * Most similar with job seeker and needed for prof field skills(skills recomendations)
-> * .csvfile with jobs recomendations
-> * .txt file with key skill in each specializations
-> * .csv file with salary estimation for cv user
+
+> Program result includes:
+> * Field of expertise(for example android-developer, web-developer, программист-инженер)
+> * The most sought-after skills for the area of specialization obtained
+> * Closest skills to CV skills (skills recomendations)
+> * .csvfile with jobs recommendations
+> * .txt file with key skill in each professional field
+> * .csv file with salary estimation for CV
 
 
 ### Run
 Clone repo or run colab link:
 [Colab demo](https://colab.research.google.com/drive/1EfZaISinrE69M_mJ6qTiUmRdKxoSiS6l#scrollTo=zXxYO9fwQLA2)
 
-> One can run either colab code neither main fuction in repo
+> One can run either colab code neither main() fuction in cloned repo
 > 1) You should choose path for source table and path for save other data and recomendations 
 >    * _dataPath_ - data source 
 >    * _pathLemmasTexts_ - file with processed job description 
@@ -38,10 +40,10 @@ Clone repo or run colab link:
 > * ~~Formatted print recomendation info~~
 > * Code optimize for lemmatize text in prepare DF
 > * ~~Correct prof names (exist prob for "c++ c++" name)~~
-> * ~~NMF clusterization~~
+> * ~~NMF decomposition~~
 > * ~~Refactor main function and model Class~~
 > * ~~Filter keySkill words~~
-> * ~~Use foreign data source~~
+> * ~~Use foreign data source (refused)~~
 
 > Report preparation
 > * ~~Git repo~~
